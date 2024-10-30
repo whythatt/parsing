@@ -58,6 +58,7 @@ async def main():
 
     count_sleep = 0
     while True:
+        print(count_sleep)
         count_sleep += 1
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
 
@@ -69,6 +70,7 @@ async def main():
         if count_sleep <= 15:
             time.sleep(5)
         time.sleep(3)
+        print(count_sleep)
 
         new_height = driver.execute_script("return document.body.scrollHeight")
 
@@ -83,7 +85,7 @@ async def main():
 
     # Извлечение всех ссылок на комментарии
     comment_links = soup.find_all("a", class_="story__comments-link story__to-comments")
-    links_list = [link["href"] for link in comment_links]
+    links_list = [link["href"] for link in comment_links[:3]]
 
     driver.quit()  # Закрываем драйвер основной страницы
 
