@@ -56,7 +56,6 @@ async def main():
     # Прокрутка страницы вниз для подгрузки постов
     last_height = driver.execute_script("return document.body.scrollHeight")
 
-    count_sleep = 0
     while True:
         print(count_sleep)
         count_sleep += 1
@@ -67,9 +66,7 @@ async def main():
             lambda d: d.execute_script("return document.readyState") == "complete"
         )
 
-        if count_sleep <= 15:
-            time.sleep(5)
-        time.sleep(3)
+        time.sleep(8)
         print(count_sleep)
 
         new_height = driver.execute_script("return document.body.scrollHeight")
