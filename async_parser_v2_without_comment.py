@@ -9,28 +9,38 @@ from bs4 import BeautifulSoup
 
 
 def fetch_comments(link):
-    driver = webdriver.Chrome()  # Create a new driver instance
+    driver = webdriver.Chrome()  # Создаем новый экземпляр драйвера
     comments_list = []
     try:
         driver.get(link)
 
-        # Wait for the "Show all comments" button and click it
+        # Ожидание загрузки страницы
         wait = WebDriverWait(driver, 30)
-        show_comments_button = wait.until(
-            EC.element_to_be_clickable((By.CLASS_NAME, "comment__more"))
-        )
-        ActionChains(driver).move_to_element(show_comments_button).click().perform()
-
-        # Wait for comments to load
-        WebDriverWait(driver, 30).until(
+        wait.until(
             lambda d: d.execute_script("return document.readyState") == "complete"
         )
 
-        # Get the page source after loading all comments
+        # Проверка наличия кнопки "Показать все комментарии"
+        try:
+            show_comments_button = wait.until(
+                EC.element_to_be_clickable((By.CLASS_NAME, "comment__more"))
+            )
+            # Если кнопка найдена, нажимаем на нее
+            ActionChains(driver).move_to_element(show_comments_button).click().perform()
+            print("Clicked on 'Show all comments' button.")
+        except Exception:
+            print("'Show all comments' button not found or not clickable.")
+
+        # Ожидание подгрузки комментариев (если они загружаются динамически)
+        WebDriverWait(driver, 30).until(
+            EC.presence_of_all_elements_located((By.CLASS_NAME, "comment__user"))
+        )
+
+        # Получаем HTML-код страницы после загрузки всех комментариев
         page_source = driver.page_source
         soup = BeautifulSoup(page_source, "html.parser")
 
-        # Extract all comments
+        # Извлечение всех комментариев
         comments_user = soup.find_all("div", class_="comment__user")
         comments_list = [
             comment.find("span", class_="user__nick").get_text(strip=True)
@@ -41,7 +51,7 @@ def fetch_comments(link):
     except Exception as e:
         print(f"Error fetching comments from {link}: {e}")
     finally:
-        driver.quit()  # Ensure the driver is closed
+        driver.quit()  # Закрываем драйвер
 
     return comments_list
 
@@ -50,7 +60,7 @@ async def main():
     comments_list = []
 
     with open("links_list.txt", "r", encoding="utf-8") as links_list:
-        links = [link.strip() for link in links_list]  # Read and strip links
+        links = [link.strip() for link in links_list]  # Чтение и обрезка ссылок
 
         with ThreadPoolExecutor(max_workers=12) as executor:
             loop = asyncio.get_event_loop()
@@ -61,15 +71,17 @@ async def main():
             for result in await asyncio.gather(*tasks):
                 comments_list.extend(result)
 
-    # Remove duplicates and write to file
+    # Удаление дубликатов и запись в файл
     unique_comments = set(comments_list)
 
     with open("only_nicks.txt", "a", encoding="utf-8") as file:
-        file.write("\n".join(unique_comments) + "\n")  # Write all unique nicks at once
+        file.write(
+            "\n".join(unique_comments) + "\n"
+        )  # Запись всех уникальных ников за раз
 
     print(unique_comments)
 
 
-# Run the async code
+# Запуск асинхронного кода
 if __name__ == "__main__":
     asyncio.run(main())
